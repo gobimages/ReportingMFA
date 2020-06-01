@@ -20,7 +20,7 @@ $tokenRequest = Invoke-WebRequest -Method Post -Uri $uri -ContentType "applicati
 
 # Access Token
 $token = ($tokenRequest.Content | ConvertFrom-Json).access_token
-$Time = Get-Date
+$Time = Get-Date -Format HH:mm:ss
 
 ### Query ###
 $Headers = @{"Authorization" = "Bearer $token" }
@@ -54,8 +54,9 @@ $content.value.userPrincipalName.count
     [string]$Item = [System.Web.HttpUtility]::UrlEncode($Item)
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
-    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
+    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 10
     $AuthMethodGraph = (Invoke-RestMethod -Headers $Headers -Uri $AuthMethod -Method Get).value
+    if (($DataMemberGraph.clientAppUsed -ne "IMAP") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
     $Properties += [PSCustomObject]@{
         userPrincipalName = $AuthMethodGraph.userPrincipalName
         DisplayName       = $AuthMethodGraph.userDisplayName
@@ -71,8 +72,9 @@ $content.value.userPrincipalName.count
         StatusAdd         = $DataMemberGraph.status.additionalDetails
         #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
     }
-    }Else{
+    }}Else{
     Write-Host $Item -ForegroundColor Green
+    if (($DataMemberGraph.clientAppUsed -ne "IMAP") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
     $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
@@ -92,7 +94,7 @@ $content.value.userPrincipalName.count
         StatusAdd         = $DataMemberGraph.status.additionalDetails
         #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
     }
-    }
+    }}
 }
 $Properties | Export-Csv C:\Users\v-gomage\Desktop\reporting.csv -NoTypeInformation
 #}
