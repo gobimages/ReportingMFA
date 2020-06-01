@@ -53,31 +53,47 @@ $content.value.userPrincipalName.count
     [string]$Item = [System.Web.HttpUtility]::UrlEncode($Item)
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
-    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
     $AuthMethodGraph = (Invoke-RestMethod -Headers $Headers -Uri $AuthMethod -Method Get).value
-    if (($DataMemberGraph.clientAppUsed -notmatch "IMAP4") -or ($DataMemberGraph.clientAppUsed -notmatch "Exchange ActiveSync")){
+    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 10 | foreach{
+    if ($_.clientAppUsed -notmatch "IMAP4"){
         $Properties += [PSCustomObject]@{
         userPrincipalName = $AuthMethodGraph.userPrincipalName
         DisplayName       = $AuthMethodGraph.userDisplayName
         "Authentication Method" = ($AuthMethodGraph.authMethods) -join ","
         IsRegistered = $AuthMethodGraph.isMfaRegistered
-        Application       = $DataMemberGraph.appDisplayName
-        ClientAppUsed     = $DataMemberGraph.clientAppUsed
-        MFADetails        = $DataMemberGraph.mfaDetail.authMethod
-        AutheDetail       = (Out-String -InputObject $DataMemberGraph.authenticationDetails.succeeded)
-        Time              = (Out-String -InputObject $DataMemberGraph.createdDateTime)
-        AutheDetailMore   = (Out-String -InputObject $DataMemberGraph.authenticationDetails.authenticationStepResultDetail)
-        Status            = if($DataMemberGraph.status.errorCode -eq "0"){"success"}else{$DataMemberGraph.status.failureReason}
-        StatusAdd         = $DataMemberGraph.status.additionalDetails
+        Application       = $_.appDisplayName
+        ClientAppUsed     = $_.clientAppUsed
+        MFADetails        = $_.mfaDetail.authMethod
+        AutheDetail       = (Out-String -InputObject $_.authenticationDetails.succeeded)
+        Time              = (Out-String -InputObject $_.createdDateTime)
+        AutheDetailMore   = (Out-String -InputObject $_.authenticationDetails.authenticationStepResultDetail)
+        Status            = if($_.status.errorCode -eq "0"){"success"}else{$_.status.failureReason}
+        StatusAdd         = $_.status.additionalDetails
         #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
-    }
+    }}
+    }Elseif ($_.clientAppUsed -notmatch "Exchange ActiveSync"){
+        $Properties += [PSCustomObject]@{
+            userPrincipalName = $AuthMethodGraph.userPrincipalName
+            DisplayName       = $AuthMethodGraph.userDisplayName
+            "Authentication Method" = ($AuthMethodGraph.authMethods) -join ","
+            IsRegistered = $AuthMethodGraph.isMfaRegistered
+            Application       = $_.appDisplayName
+             ClientAppUsed     = $_.clientAppUsed
+        MFADetails        = $_.mfaDetail.authMethod
+        AutheDetail       = (Out-String -InputObject $_.authenticationDetails.succeeded)
+        Time              = (Out-String -InputObject $_.createdDateTime)
+        AutheDetailMore   = (Out-String -InputObject $_.authenticationDetails.authenticationStepResultDetail)
+        Status            = if($_.status.errorCode -eq "0"){"success"}else{$_.status.failureReason}
+        StatusAdd         = $_.status.additionalDetails
+            #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
     }}Else{
     Write-Host $Item -ForegroundColor Green
-    if (($DataMemberGraph.clientAppUsed -notcontains "IMAP4") -or ($DataMemberGraph.clientAppUsed -notcontains "Exchange ActiveSync")){
+
+    if ($DataMemberGraph.clientAppUsed -notmatch "IMAP4"){
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
-    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
     $AuthMethodGraph = (Invoke-RestMethod -Headers $Headers -Uri $AuthMethod -Method Get).value
+    $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1 | foreach{}
     $Properties += [PSCustomObject]@{
         userPrincipalName = $AuthMethodGraph.userPrincipalName
         DisplayName       = $AuthMethodGraph.userDisplayName
@@ -93,7 +109,24 @@ $content.value.userPrincipalName.count
         StatusAdd         = $DataMemberGraph.status.additionalDetails
         #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
     }
+    }Elseif ($DataMemberGraph.clientAppUsed -notmatch "Exchange ActiveSync"){
+        $Properties += [PSCustomObject]@{
+            userPrincipalName = $AuthMethodGraph.userPrincipalName
+            DisplayName       = $AuthMethodGraph.userDisplayName
+            "Authentication Method" = ($AuthMethodGraph.authMethods) -join ","
+            IsRegistered = $AuthMethodGraph.isMfaRegistered
+            Application       = $DataMemberGraph.appDisplayName
+            ClientAppUsed     = $DataMemberGraph.clientAppUsed
+            MFADetails        = $DataMemberGraph.mfaDetail.authMethod
+            AutheDetail       = (Out-String -InputObject $DataMemberGraph.authenticationDetails.succeeded)
+            Time              = (Out-String -InputObject $DataMemberGraph.createdDateTime)
+            AutheDetailMore   = (Out-String -InputObject $DataMemberGraph.authenticationDetails.authenticationStepResultDetail)
+            Status            = if($DataMemberGraph.status.errorCode -eq "0"){"success"}else{$DataMemberGraph.status.failureReason}
+            StatusAdd         = $DataMemberGraph.status.additionalDetails
+            #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
+    }
     }}
+    $properties
 }
-$Properties | Export-Csv C:\Users\v-gomage\Desktop\reporting3.csv -NoTypeInformation
+#$Properties | Export-Csv C:\Users\v-gomage\Desktop\reporting3.csv -NoTypeInformation
 #}
