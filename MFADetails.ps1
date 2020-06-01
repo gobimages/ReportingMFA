@@ -74,7 +74,7 @@ $content.value.userPrincipalName.count
     }
     }}Else{
     Write-Host $Item -ForegroundColor Green
-    if (($DataMemberGraph.clientAppUsed -ne "IMAP4") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
+    if (($DataMemberGraph.clientAppUsed -notmatch "IMAP4") -or ($DataMemberGraph.clientAppUsed -notmatch "Exchange ActiveSync")){
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
     $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
