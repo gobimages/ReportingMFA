@@ -56,8 +56,8 @@ $content.value.userPrincipalName.count
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
     $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 10
     $AuthMethodGraph = (Invoke-RestMethod -Headers $Headers -Uri $AuthMethod -Method Get).value
-    if (($DataMemberGraph.clientAppUsed -ne "IMAP") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
-    $Properties += [PSCustomObject]@{
+    if (($DataMemberGraph.clientAppUsed -ne "IMAP4") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
+        $Properties += [PSCustomObject]@{
         userPrincipalName = $AuthMethodGraph.userPrincipalName
         DisplayName       = $AuthMethodGraph.userDisplayName
         "Authentication Method" = ($AuthMethodGraph.authMethods) -join ","
@@ -74,7 +74,7 @@ $content.value.userPrincipalName.count
     }
     }}Else{
     Write-Host $Item -ForegroundColor Green
-    if (($DataMemberGraph.clientAppUsed -ne "IMAP") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
+    if (($DataMemberGraph.clientAppUsed -ne "IMAP4") -or ($DataMemberGraph.clientAppUsed -ne "Exchange ActiveSync")){
     $AuthMethod = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq '$($Item)'"
     $AddUserGraph = "https://graph.microsoft.com/beta/auditLogs/signIns?`$filter=createdDateTime ge $date and userPrincipalName eq '$($Item)'"
     $DataMemberGraph = (Invoke-RestMethod -Headers $Headers -Uri $AddUserGraph -Method Get).value | Select-Object -First 1
@@ -94,7 +94,8 @@ $content.value.userPrincipalName.count
         StatusAdd         = $DataMemberGraph.status.additionalDetails
         #CAPolicy = $DataMemberGraph.value.appliedConditionalAccessPolicies
     }
+    $Properties
     }}
 }
-$Properties | Export-Csv C:\Users\v-gomage\Desktop\reporting.csv -NoTypeInformation
+#$Properties | Export-Csv C:\Users\v-gomage\Desktop\reporting3.csv -NoTypeInformation
 #}
